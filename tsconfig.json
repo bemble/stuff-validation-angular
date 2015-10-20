@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "target": "es5",
+    "sourceMap": true
+  },
+  "filesGlob": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "!**/*.d.ts"
+  ],
+  "exclude": [],
+  "files": [
+    "src/dataValidation.ts",
+    "src/validatedModel.ts",
+    "src/validationService.ts",
+    "tests/validatedModel.spec.ts",
+    "tests/validationService.spec.ts"
+  ]
+}

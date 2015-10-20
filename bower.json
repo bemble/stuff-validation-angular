@@ -1,0 +1,26 @@
+{
+  "name": "data-validation-angular",
+  "description": "Angular module to easily validate data.",
+  "main": "dist/angular.data-validation.js",
+  "authors": [
+    "Pierre CLEMENT <pierre@clement.re> (http://www.pierre-clement.info)"
+  ],
+  "license": "LGPL-3.0",
+  "keywords": [
+    "data-validation",
+    "validation",
+    "rules",
+    "angular"
+  ],
+  "homepage": "https://github.com/pierrecle/data-validation-angular",
+  "moduleType": [
+    "globals"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
