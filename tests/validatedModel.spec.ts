@@ -70,6 +70,16 @@ describe('ValidatedModel', () => {
     expect(validationService.validateValue.calls.count()).toEqual(2);
   });
 
+  it('works with standard validation', () => {
+    $scope.$digest();
+    $scope.vm.test = null;
+    $scope.$digest();
+    expect(ngModelController.$invalid).toBe(true);
+    $scope.vm.test = 123;
+    $scope.$digest();
+    expect(ngModelController.$valid).toBe(true);
+  });
+
   describe('events binding', () => {
     it('listen on validationService.getValidateAllEventName and validationService.getValidateGroupEventName to validate all and groups', () => {
       expect(validationService.getValidateAllEventName).toHaveBeenCalled();
