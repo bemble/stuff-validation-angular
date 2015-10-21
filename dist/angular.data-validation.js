@@ -28,17 +28,17 @@ var __extends = (this && this.__extends) || function (d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var Rule_1 = require('../Rule');
-var NotUndefinedOrNan = (function (_super) {
-    __extends(NotUndefinedOrNan, _super);
-    function NotUndefinedOrNan() {
+var DefinedAndNotNan = (function (_super) {
+    __extends(DefinedAndNotNan, _super);
+    function DefinedAndNotNan() {
         _super.apply(this, arguments);
     }
-    NotUndefinedOrNan.prototype.isValueValid = function (value) {
+    DefinedAndNotNan.prototype.isValueValid = function (value) {
         return value !== undefined && value === value;
     };
-    return NotUndefinedOrNan;
+    return DefinedAndNotNan;
 })(Rule_1.Rule);
-exports.NotUndefinedOrNan = NotUndefinedOrNan;
+exports.DefinedAndNotNan = DefinedAndNotNan;
 
 },{"../Rule":2}],4:[function(require,module,exports){
 var __extends = (this && this.__extends) || function (d, b) {
@@ -64,7 +64,7 @@ var Required = (function (_super) {
 exports.Required = Required;
 
 },{"../Rule":2}],5:[function(require,module,exports){
-var NotUndefinedOrNan_1 = require('./Rules/NotUndefinedOrNan');
+var DefinedAndNotNan_1 = require('./Rules/DefinedAndNotNan');
 var Required_1 = require('./Rules/Required');
 var RulesCollection = (function () {
     function RulesCollection() {
@@ -75,7 +75,7 @@ var RulesCollection = (function () {
     };
     RulesCollection.reset = function () {
         RulesCollection.collection = {};
-        RulesCollection.collection['notUndefinedOrNan'] = new NotUndefinedOrNan_1.NotUndefinedOrNan();
+        RulesCollection.collection['definedAndNotNan'] = new DefinedAndNotNan_1.DefinedAndNotNan();
         RulesCollection.collection['required'] = new Required_1.Required();
     };
     RulesCollection.addRule = function (ruleName, rule) {
@@ -95,7 +95,7 @@ var RulesCollection = (function () {
 })();
 exports.RulesCollection = RulesCollection;
 
-},{"./Rules/NotUndefinedOrNan":3,"./Rules/Required":4}],6:[function(require,module,exports){
+},{"./Rules/DefinedAndNotNan":3,"./Rules/Required":4}],6:[function(require,module,exports){
 var Rule_1 = require('./Rule');
 var RulesCollection_1 = require('./RulesCollection');
 var ValidationRule = (function () {
@@ -142,7 +142,7 @@ var Validator = (function () {
     }
     Validator.prototype.validateValue = function (value, rules) {
         var usedRules = rules ? rules : [];
-        usedRules.unshift('notUndefinedOrNan');
+        usedRules.unshift('definedAndNotNan');
         var isNullValid = this.isNullValid(value, usedRules);
         for (var i = 0; i < usedRules.length && !isNullValid; i++) {
             var validationRule = this.getValidationRule(usedRules[i]);
@@ -251,7 +251,7 @@ function validateModelDirective(validationService) {
             return validationService.validateValue(modelValue, validationRules) === null;
         };
         var validate = function () {
-            ctrl.$setDirty(true);
+            ctrl.$validate();
         };
         var allEventName = validationService.getValidateAllEventName();
         scope.$on(allEventName, validate);

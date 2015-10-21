@@ -24,7 +24,7 @@ function validateModelDirective(validationService:any):ng.IDirective {
     };
 
     var validate = () => {
-      ctrl.$setDirty(true);
+      ctrl.$validate();
     };
 
     var allEventName = validationService.getValidateAllEventName();
