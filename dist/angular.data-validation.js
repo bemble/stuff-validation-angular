@@ -225,42 +225,48 @@ var Validator = (function () {
 exports.Validator = Validator;
 
 },{"./RulesCollection":5,"./ValidationRule":6}],8:[function(require,module,exports){
+
+},{}],9:[function(require,module,exports){
 /// <reference path="../typings/angularjs/angular.d.ts" />
 (function () {
     angular.module('dataValidation', []);
 })();
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /// <reference path="../typings/angularjs/angular.d.ts" />
+/// <reference path="angular.dataValidation.d.ts" />
 function validateModelDirective(validationService) {
     'ngInject';
     var directiveLink = function (scope, elm, attrs, ctrl) {
         ctrl.$options = ctrl.$options || {};
         ctrl.$options.updateOn = ['blur'];
         var propertyName = attrs.ngModel.match(/.+\.(.+)$/)[1];
-        var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1");
-        var validationRulesExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1.validationRules.$2");
-        var validationGroupsExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1.validationGroups");
+        var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1');
+        var validationConfigurationExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1.validationConfiguration');
         var viewModel = scope.$eval(viewModelExpression);
-        var validationRules = scope.$eval(validationRulesExpression);
-        var validationGroups = scope.$eval(validationGroupsExpression) || {};
-        if (!viewModel.$$validatedModelUniqId) {
-            Object.defineProperty(viewModel, '$$validatedModelUniqId', { value: validationService.uniqId() });
-        }
-        ctrl.$validators.dataValidation = function (modelValue, viewValue) {
-            return validationService.validateValue(modelValue, validationRules) === null;
-        };
-        var validate = function () {
-            ctrl.$validate();
-        };
-        var allEventName = validationService.getValidateAllEventName();
-        scope.$on(allEventName, validate);
-        Object.keys(validationGroups).forEach(function (groupName) {
-            if (validationGroups[groupName].indexOf(propertyName) >= 0) {
-                var groupEventName = validationService.getValidateGroupEventName(groupName);
-                scope.$on(groupEventName, validate);
+        var validationConfiguration = scope.$eval(validationConfigurationExpression);
+        var rules = validationConfiguration && validationConfiguration.rules && validationConfiguration.rules[propertyName];
+        if (rules) {
+            if (!viewModel.$$validatedModelUniqId) {
+                Object.defineProperty(viewModel, '$$validatedModelUniqId', { value: validationService.uniqId() });
             }
-        });
+            ctrl.$validators.dataValidation = function (modelValue, viewValue) {
+                return validationService.validateValue(modelValue, rules) === null;
+            };
+            var validate = function () {
+                ctrl.$validate();
+            };
+            var allEventName = validationService.getValidateAllEventName();
+            scope.$on(allEventName, validate);
+            if (validationConfiguration.groups) {
+                Object.keys(validationConfiguration.groups).forEach(function (groupName) {
+                    if (validationConfiguration.groups[groupName].indexOf(propertyName) >= 0) {
+                        var groupEventName = validationService.getValidateGroupEventName(groupName);
+                        scope.$on(groupEventName, validate);
+                    }
+                });
+            }
+        }
     };
     return {
         require: 'ngModel',
@@ -273,7 +279,7 @@ function validateModelDirective(validationService) {
     module.directive('validatedModel', validateModelDirective);
 })();
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /// <reference path="../typings/node/node.d.ts" />
 /// <reference path="../typings/angularjs/angular.d.ts" />
 /// <reference path="../node_modules/data-validation/dist/data-validation.d.ts" />
@@ -322,4 +328,4 @@ function validationService($rootScope) {
     module.service('validationService', validationService);
 })();
 
-},{"data-validation":1}]},{},[8,9,10]);
+},{"data-validation":1}]},{},[8,9,10,11]);

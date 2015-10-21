@@ -1,6 +1,7 @@
 /// <reference path="../typings/angularjs/angular.d.ts" />
+/// <reference path="angular.dataValidation.d.ts" />
 
-function validateModelDirective(validationService:any):ng.IDirective {
+function validateModelDirective(validationService:angularDataValidation.IValidationService):ng.IDirective {
   'ngInject';
 
   var directiveLink:ng.IDirectiveLinkFn = (scope:angular.IScope, elm:any, attrs:any, ctrl:any) => {
@@ -8,34 +9,38 @@ function validateModelDirective(validationService:any):ng.IDirective {
     ctrl.$options.updateOn = ['blur'];
 
     var propertyName = attrs.ngModel.match(/.+\.(.+)$/)[1];
-    var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1");
-    var validationRulesExpression:string = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1.validationRules.$2");
-    var validationGroupsExpression:string = attrs.ngModel.replace(/(.+)\.(.+)$/, "$1.validationGroups");
+    var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1');
+    var validationConfigurationExpression:string = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1.validationConfiguration');
+
     var viewModel = scope.$eval(viewModelExpression);
-    var validationRules:any = scope.$eval(validationRulesExpression);
-    var validationGroups:any = scope.$eval(validationGroupsExpression) || {};
+    var validationConfiguration:angularDataValidation.IValidationConfiguration = scope.$eval(validationConfigurationExpression);
 
-    if(!viewModel.$$validatedModelUniqId) {
-      Object.defineProperty(viewModel, '$$validatedModelUniqId', {value: validationService.uniqId()});
-    }
-
-    ctrl.$validators.dataValidation = (modelValue:any, viewValue:any) => {
-      return validationService.validateValue(modelValue, validationRules) === null;
-    };
-
-    var validate = () => {
-      ctrl.$validate();
-    };
-
-    var allEventName = validationService.getValidateAllEventName();
-    scope.$on(allEventName, validate);
-
-    Object.keys(validationGroups).forEach((groupName:string) => {
-      if (validationGroups[groupName].indexOf(propertyName) >= 0) {
-        var groupEventName = validationService.getValidateGroupEventName(groupName);
-        scope.$on(groupEventName, validate);
+    var rules:(dataValidation.ValidationRule | dataValidation.Rule | string)[] = validationConfiguration && validationConfiguration.rules && validationConfiguration.rules[propertyName];
+    if (rules) {
+      if (!viewModel.$$validatedModelUniqId) {
+        Object.defineProperty(viewModel, '$$validatedModelUniqId', {value: validationService.uniqId()});
       }
-    });
+
+      ctrl.$validators.dataValidation = (modelValue:any, viewValue:any) => {
+        return validationService.validateValue(modelValue, rules) === null;
+      };
+
+      var validate = () => {
+        ctrl.$validate();
+      };
+
+      var allEventName = validationService.getValidateAllEventName();
+      scope.$on(allEventName, validate);
+
+      if (validationConfiguration.groups) {
+        Object.keys(validationConfiguration.groups).forEach((groupName:string) => {
+          if (validationConfiguration.groups[groupName].indexOf(propertyName) >= 0) {
+            var groupEventName = validationService.getValidateGroupEventName(groupName);
+            scope.$on(groupEventName, validate);
+          }
+        });
+      }
+    }
   };
 
   return <ng.IDirective> {

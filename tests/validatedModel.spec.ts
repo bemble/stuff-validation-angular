@@ -1,4 +1,5 @@
 /// <reference path="../typings/tsd.d.ts" />
+/// <reference path="../src/angular.dataValidation.d.ts" />
 
 describe('ValidatedModel', () => {
   var $compile:ng.ICompileService, $rootScope:ng.IRootScopeService, $scope:any, element:any, ngModelController:any;
@@ -20,25 +21,29 @@ describe('ValidatedModel', () => {
 
   beforeEach(angular.mock.inject(($injector:angular.auto.IInjectorService) => {
     $scope = $rootScope.$new();
-    $scope.vm = {
-      test: null,
-      test2: null,
-      test3: null,
-      test4: null,
-      validationRules: {
+
+    var validationConfiguration:angularDataValidation.IValidationConfiguration = {
+      rules: {
         test: ['required'],
         test2: ['required'],
         test3: ['required'],
         test4: ['required']
       },
-      validationGroups: {
+      groups: {
         'fooGroup': ['test'],
         'fooGroup2': ['test']
       },
-      validationDependencies: {
+      dependencies: {
         test2: ['test3'],
         test3: ['test', 'test2']
       }
+    };
+    $scope.vm = {
+      test: null,
+      test2: null,
+      test3: null,
+      test4: null,
+      validationConfiguration: validationConfiguration
     };
 
     spyOn(validationService, 'uniqId').and.callThrough();

@@ -34,7 +34,7 @@ function validationService($rootScope:ng.IRootScopeService):ng.IServiceProvider 
       $rootScope.$broadcast(eventName);
     }
 
-    uniqId() {
+    uniqId():string {
       return Math.random().toString(36).substring(7) + Date.now();
     }
   }
