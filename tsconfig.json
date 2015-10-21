@@ -4,8 +4,7 @@
     "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
-    "target": "es5",
-    "sourceMap": true
+    "target": "es5"
   },
   "filesGlob": [
     "src/**/*.ts",
@@ -19,5 +18,6 @@
     "src/validationService.ts",
     "tests/validatedModel.spec.ts",
     "tests/validationService.spec.ts"
-  ]
+  ],
+  "compileOnSave": false
 }
