@@ -6,9 +6,10 @@ var gulp = require('gulp');
 gulp.task('tsd', tsdTask);
 gulp.task('test', testTask);
 gulp.task('typescript', typescriptTask);
+gulp.task('typescriptChanged', typescriptChangedTask);
 gulp.task('watch:tests', watchTestsTask);
 gulp.task('watch:typescript', watchTypescriptTask);
-gulp.task('watch', ['watch:typescript', 'watch:test']);
+gulp.task('watch', ['watch:typescript', 'watch:tests']);
 gulp.task('build:clean', buildCleanTask);
 gulp.task('build:typescript', buildTypescriptTask);
 gulp.task('build:test', ['typescript'], buildTestTask);
@@ -69,6 +70,15 @@ typescriptTask.description = "Transpile Typescript files";
 var tsProject = ts.createProject('tsconfig.json');
 function typescriptTask() {
   return tsProject.src()
+  .pipe(sourcemaps.init())
+  .pipe(ts(tsProject)).js
+  .pipe(sourcemaps.write())
+  .pipe(gulp.dest('./'));
+};
+
+typescriptTask.description = "Transpile changed Typescript files";
+function typescriptChangedTask() {
+  return tsProject.src()
   .pipe(changed('.', {extension: '.js'}))
   .pipe(sourcemaps.init())
   .pipe(ts(tsProject)).js
@@ -77,13 +87,20 @@ function typescriptTask() {
 };
 
 watchTestsTask.description = "Run tests everytime a JS file change";
-function watchTestsTask() {
-  gulp.watch(['src/**/*.js', 'tests/**/*.js'], ['test']);
+function watchTestsTask(done) {
+  var karmaServerConf = { configFile: __dirname + '/karma.conf.js', singleRun: false, autoWatch: true };
+  var exitCallback = function (exitCode) {
+    exitCode === 0 && done();
+  };
+
+  var KarmaServer = require('karma').Server;
+  new KarmaServer(karmaServerConf, exitCallback).start();
 };
 
 watchTypescriptTask.description = "Transpile Typescript files everytime a change occurs";
 function watchTypescriptTask() {
-  gulp.watch(tsProject.config.filesGlob, ['typescript']);
+  typescriptTask();
+  gulp.watch(tsProject.config.filesGlob, ['typescriptChanged']);
 };
 
 /*
