@@ -11,7 +11,7 @@ declare module angularDataValidation {
     addRule(ruleName:string, rule:dataValidation.Rule): void;
     getValidateAllEventName(): string;
     getValidateGroupEventName(groupName:string):string;
-    getValidatedModelEventName(objectUniqId:string, propertyName:string):string;
+    getValidatedModelPropertyEventName(objectUniqId:string, propertyName:string):string;
     validateGroup(groupName:string):void;
     validateAll():void;
     uniqId():string;

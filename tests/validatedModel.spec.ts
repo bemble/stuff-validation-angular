@@ -2,21 +2,26 @@
 /// <reference path="../src/angular.dataValidation.d.ts" />
 
 describe('ValidatedModel', () => {
-  var $compile:ng.ICompileService, $rootScope:ng.IRootScopeService, $scope:any, element:any, ngModelController:any;
+  var $compile:ng.ICompileService, $rootScope:ng.IRootScopeService, $scope:any, elements:ng.IAugmentedJQuery[] = [], ngModelControllers:any[] = [];
   var validationService:any;
 
   function initDirective() {
-    element = angular.element('<input name="test" ng-model="vm.test" validated-model>');
-    $compile(element)($scope);
-    ngModelController = element.controller('ngModel');
+    for(var i = 1; i <= 4; i++){
+      var element:ng.IAugmentedJQuery = angular.element('<input name="test" ng-model="vm.test'+i+'" validated-model>');
+      elements.push(element);
+      $compile(element)($scope);
+      ngModelControllers.push(element.controller('ngModel'));
+    }
   }
 
   beforeEach(angular.mock.module('dataValidation'));
 
   beforeEach(angular.mock.inject(($injector:angular.auto.IInjectorService) => {
+    elements.length = 0;
+    ngModelControllers.length = 0;
     $rootScope = <ng.IRootScopeService> $injector.get('$rootScope');
     $compile = <ng.ICompileService> $injector.get('$compile');
-    validationService = $injector.get('validationService');
+    validationService = <angularDataValidation.IValidationService> $injector.get('validationService');
   }));
 
   beforeEach(angular.mock.inject(($injector:angular.auto.IInjectorService) => {
@@ -24,22 +29,24 @@ describe('ValidatedModel', () => {
 
     var validationConfiguration:angularDataValidation.IValidationConfiguration = {
       rules: {
-        test: ['required'],
+        test1: ['required'],
         test2: ['required'],
         test3: ['required'],
         test4: ['required']
       },
       groups: {
-        'fooGroup': ['test'],
-        'fooGroup2': ['test']
+        'fooGroup': ['test1'],
+        'fooGroup2': ['test1']
       },
       dependencies: {
         test2: ['test3'],
-        test3: ['test', 'test2']
+        test3: ['test1']
+        // TODO: BUG with dependencies loop
+        // test3: ['test1', 'test2']
       }
     };
     $scope.vm = {
-      test: null,
+      test1: null,
       test2: null,
       test3: null,
       test4: null,
@@ -49,40 +56,43 @@ describe('ValidatedModel', () => {
     spyOn(validationService, 'uniqId').and.callThrough();
     spyOn(validationService, 'validateValue').and.callThrough();
     spyOn(validationService, 'getValidateAllEventName').and.callThrough();
+    spyOn(validationService, 'getValidatedModelPropertyEventName').and.callThrough();
     spyOn($scope, '$on').and.callThrough();
 
     initDirective();
   }));
 
   it('set the updateOn option to blur', () => {
-    expect(ngModelController.$options).toBeDefined();
-    expect(ngModelController.$options.updateOn).toEqual(['blur']);
+    expect(ngModelControllers[0].$options).toBeDefined();
+    expect(ngModelControllers[0].$options.updateOn).toEqual(['blur']);
   });
 
   it('adds a validator name dataValidation', () => {
-    expect(ngModelController.$validators.dataValidation).toBeDefined();
+    expect(ngModelControllers[0].$validators.dataValidation).toBeDefined();
   });
 
   it('calls validationService.validateValue with the model value and the found the validation rules', () => {
-    ngModelController.$validators.dataValidation('foo', 'bar');
+    ngModelControllers[0].$validators.dataValidation('foo', 'bar');
     expect(validationService.validateValue).toHaveBeenCalledWith('foo', ['definedAndNotNan', 'required']);
   });
 
   it('calls the validation when model value change', () => {
     $scope.$digest();
-    $scope.vm.test = 123;
+    validationService.validateValue.calls.reset();
+    // Do not use a property with dependencies, the count won't be 1
+    $scope.vm.test4 = 123;
     $scope.$digest();
-    expect(validationService.validateValue.calls.count()).toEqual(2);
+    expect(validationService.validateValue.calls.count()).toEqual(1);
   });
 
   it('works with standard validation', () => {
     $scope.$digest();
-    $scope.vm.test = null;
+    $scope.vm.test1 = null;
     $scope.$digest();
-    expect(ngModelController.$invalid).toBe(true);
-    $scope.vm.test = 123;
+    expect(ngModelControllers[0].$invalid).toBe(true);
+    $scope.vm.test1 = 123;
     $scope.$digest();
-    expect(ngModelController.$valid).toBe(true);
+    expect(ngModelControllers[0].$valid).toBe(true);
   });
 
   describe('events binding', () => {
@@ -94,27 +104,27 @@ describe('ValidatedModel', () => {
     });
 
     it('validate the model when validateAll event is broadcasted', () => {
-      spyOn(ngModelController, '$validate');
+      spyOn(ngModelControllers[0], '$validate');
       $rootScope.$broadcast('data-validation-validate-all');
       $scope.$digest();
-      expect(ngModelController.$validate).toHaveBeenCalled();
+      expect(ngModelControllers[0].$validate).toHaveBeenCalled();
     });
     it('validate the model when a validate group event of a group that contains the model is broadcasted', () => {
-      spyOn(ngModelController, '$validate');
+      spyOn(ngModelControllers[0], '$validate');
       $rootScope.$broadcast('data-validation-validate-group-fooGroup');
       $scope.$digest();
-      expect(ngModelController.$validate).toHaveBeenCalled();
+      expect(ngModelControllers[0].$validate).toHaveBeenCalled();
     });
 
     it('does not validate the model when a random event is broadcasted', () => {
-      spyOn(ngModelController, '$validate');
+      spyOn(ngModelControllers[0], '$validate');
       $rootScope.$broadcast('not-listened');
       $scope.$digest();
-      expect(ngModelController.$validate).not.toHaveBeenCalled();
+      expect(ngModelControllers[0].$validate).not.toHaveBeenCalled();
     });
   });
 
-  describe('validationDependencies', () => {
+  describe('dependencies', () => {
     it('add a $$validatedModelUniqId property to the model', () => {
       expect(validationService.uniqId).toHaveBeenCalled();
       var computedId = validationService.uniqId.calls.mostRecent().returnValue;
@@ -133,6 +143,37 @@ describe('ValidatedModel', () => {
       it('does not set $$validatedModelUniqId property', () => {
         expect($scope.vm.$$validatedModelUniqId).toEqual('foo');
       });
+    });
+
+    it('emit an event when the value is validated and another property depends on the current', () => {
+      spyOn($scope, '$emit').and.callThrough();
+      expect(validationService.getValidatedModelPropertyEventName).toHaveBeenCalled();
+      var event1Name = validationService.getValidatedModelPropertyEventName.calls.first().returnValue;
+      var event4Name = validationService.getValidatedModelPropertyEventName.calls.mostRecent().returnValue;
+
+      $scope.vm.test1 = 123;
+      $scope.$digest();
+      expect($scope.$emit).toHaveBeenCalledWith(event1Name);
+
+      $scope.vm.test4 = 123;
+      $scope.$digest();
+      expect($scope.$emit).not.toHaveBeenCalledWith(event4Name);
+    });
+
+    it('call the validation on every dependent rule', () => {
+      ngModelControllers.forEach((controller:any) => {
+        spyOn(controller, '$validate').and.callThrough();
+      });
+
+      $scope.vm.test3 = 123;
+      $scope.$digest();
+      expect(ngModelControllers[1].$validate).toHaveBeenCalled();
+      expect(ngModelControllers[0].$validate).not.toHaveBeenCalled();
+
+      $scope.vm.test1 = 123;
+      $scope.$digest();
+      expect(ngModelControllers[2].$validate).toHaveBeenCalled();
+      expect(ngModelControllers[3].$validate).not.toHaveBeenCalled();
     });
   });
 });

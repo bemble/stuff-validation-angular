@@ -20,7 +20,7 @@ function validationService($rootScope:ng.IRootScopeService):ng.IServiceProvider 
       return 'data-validation-validate-group-' + groupName;
     }
 
-    getValidatedModelEventName(objectUniqId:string, propertyName:string):string {
+    getValidatedModelPropertyEventName(objectUniqId:string, propertyName:string):string {
       return 'data-validation-validated-model-' + objectUniqId + '-' + propertyName;
     }
 

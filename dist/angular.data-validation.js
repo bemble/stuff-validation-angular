@@ -241,17 +241,26 @@ function validateModelDirective(validationService) {
         ctrl.$options = ctrl.$options || {};
         ctrl.$options.updateOn = ['blur'];
         var propertyName = attrs.ngModel.match(/.+\.(.+)$/)[1];
-        var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1');
-        var validationConfigurationExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1.validationConfiguration');
-        var viewModel = scope.$eval(viewModelExpression);
-        var validationConfiguration = scope.$eval(validationConfigurationExpression);
+        var viewModel = getViewModel(attrs, scope);
+        var validationConfiguration = getValidationConfiguration(attrs, scope);
         var rules = validationConfiguration && validationConfiguration.rules && validationConfiguration.rules[propertyName];
         if (rules) {
             if (!viewModel.$$validatedModelUniqId) {
                 Object.defineProperty(viewModel, '$$validatedModelUniqId', { value: validationService.uniqId() });
             }
+            var validatedModelPropertyEventName = validationService.getValidatedModelPropertyEventName(viewModel.$$validatedModelUniqId, propertyName);
+            var hasDependentProperties = false;
+            if (validationConfiguration.dependencies) {
+                var dependenciesKeys = Object.keys(validationConfiguration.dependencies);
+                for (var i = 0; i < dependenciesKeys.length && !hasDependentProperties; i++) {
+                    var dependentRuleName = dependenciesKeys[i];
+                    hasDependentProperties = validationConfiguration.dependencies[dependentRuleName].indexOf(propertyName) >= 0;
+                }
+            }
             ctrl.$validators.dataValidation = function (modelValue, viewValue) {
-                return validationService.validateValue(modelValue, rules) === null;
+                var isValid = validationService.validateValue(modelValue, rules) === null;
+                hasDependentProperties && scope.$emit(validatedModelPropertyEventName);
+                return isValid;
             };
             var validate = function () {
                 ctrl.$validate();
@@ -266,8 +275,24 @@ function validateModelDirective(validationService) {
                     }
                 });
             }
+            if (validationConfiguration.dependencies && validationConfiguration.dependencies[propertyName]) {
+                validationConfiguration.dependencies[propertyName].forEach(function (dependingPropertyName) {
+                    var dependingPropertyValidatedEventName = validationService.getValidatedModelPropertyEventName(viewModel.$$validatedModelUniqId, dependingPropertyName);
+                    scope.$on(dependingPropertyValidatedEventName, validate);
+                });
+            }
         }
     };
+    function getViewModel(attrs, scope) {
+        var viewModelExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1');
+        return scope.$eval(viewModelExpression);
+    }
+    ;
+    function getValidationConfiguration(attrs, scope) {
+        var validationConfigurationExpression = attrs.ngModel.replace(/(.+)\.(.+)$/, '$1.validationConfiguration');
+        return scope.$eval(validationConfigurationExpression);
+    }
+    ;
     return {
         require: 'ngModel',
         restrict: 'A',
@@ -305,7 +330,7 @@ function validationService($rootScope) {
         ValidationService.prototype.getValidateGroupEventName = function (groupName) {
             return 'data-validation-validate-group-' + groupName;
         };
-        ValidationService.prototype.getValidatedModelEventName = function (objectUniqId, propertyName) {
+        ValidationService.prototype.getValidatedModelPropertyEventName = function (objectUniqId, propertyName) {
             return 'data-validation-validated-model-' + objectUniqId + '-' + propertyName;
         };
         ValidationService.prototype.validateGroup = function (groupName) {
